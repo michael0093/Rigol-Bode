@@ -3,6 +3,7 @@ import time
 import datetime
 import pyvisa
 import math
+import platform 
 
 ##########################################
 # Channel 1 = Vin
@@ -22,10 +23,16 @@ STOP_VOUT = 5e-6        # Stop Vout voltage: 5e-3 = 5mV. OR'd with the STOP_FREQ
 input("Configure the equipment and press enter to connect...")
 
 # Connect and identify the VISA equipment
-rm = pyvisa.ResourceManager()
-print(rm.list_resources())          # List all VISA instruments and copy-paste yours into the open_resource() below
-instSource = rm.open_resource('USB0::0x1AB1::0x0642::DG1ZA200500518::INSTR') 
-instScope = rm.open_resource('USB0::0x1AB1::0x04CE::DS1ZA194017266::INSTR') 
+rm = pyvisa.ResourceManager('@py')
+# print(rm.list_resources())          # List all VISA instruments and copy-paste yours into the open_resource() below
+
+if platform.system() == 'Windows':
+    instSource = rm.open_resource('USB0::0x1AB1::0x0642::DG1ZA200500518::INSTR') # Windows
+    instScope = rm.open_resource('USB0::0x1AB1::0x04CE::DS1ZA194017266::INSTR')  # Windows
+elif platform.system() == 'Linux':
+    instSource = rm.open_resource('USB0::6833::1602::DG1ZA000000000::0::INSTR')  # Linux
+    instScope = rm.open_resource('USB0::6833::1230::DS1ZA194017266::0::INSTR')   # Linux
+
 print(instSource.query("*IDN?"))    # Print VISA instrument details useful for debugging
 print(instScope.query("*IDN?"))
 
@@ -53,8 +60,8 @@ while True:
     MeasDB = 20*math.log(MeasVout/MeasVin,10)
 
     # Adjust the vertical scale for the next measurement. Complex waveforms might mess this up so you might need to comment out.
-    instScope.write(':CHAN1:SCAL {}'.format((MeasVin*3.2)/8))     # Theory is 2*sqrt(2) but 3 gives a little extra vertical margin if your signal is large with small DC offset. For small signals I've been using 3.5. Will be vernier scale despite the DS1000Z documentation.
-    instScope.write(':CHAN3:SCAL {}'.format((MeasVout*3.2)/8))
+    #instScope.write(':CHAN1:SCAL {}'.format((MeasVin*3.2)/8))     # Theory is 2*sqrt(2) but 3 gives a little extra vertical margin if your signal is large with small DC offset. For small signals I've been using 3.5. Will be vernier scale despite the DS1000Z documentation.
+    #instScope.write(':CHAN3:SCAL {}'.format((MeasVout*3.2)/8))
     
     # If you have disabled auto ranging above, you may like to generate a beep when the signal might need manual intervention. The DG1000Z can give a beep on command, the DS cannot.
     # currVoutScale = float(instScope.query(':CHAN3:SCAL?'))
